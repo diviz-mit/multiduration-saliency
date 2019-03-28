@@ -403,13 +403,14 @@ class SalImpGenerator(Sequence):
         img_size,
         map_size,
         img_filenames,
-        imp_filenames,
+        map_filenames,
         fix_filenames=None,
         batch_size=1,
         shuffle=True,
         augment=False,
         n_output_maps=1,
-        concat_fix_and_maps=True,
+        n_output_fixs=1,
+        concat_fix_and_maps=False,
         fix_as_mat=False,
         fix_key=""):
 
@@ -417,13 +418,14 @@ class SalImpGenerator(Sequence):
               (len(img_filenames), batch_size, str(img_size), str(map_size), augment ))
 
         self.img_filenames = np.array(img_filenames)
-        self.imp_filenames = np.array(imp_filenames)
+        self.map_filenames = np.array(map_filenames)
         self.batch_size = batch_size
         self.img_size = img_size
         self.map_size = map_size
         self.shuffle = shuffle
         self.augment = augment
         self.n_output_maps = n_output_maps
+        self.n_output_fixs = n_output_fixs
         self.concat_fix_and_maps = concat_fix_and_maps
         self.fix_as_mat=fix_as_mat
         self.fix_key = fix_key
@@ -451,10 +453,10 @@ class SalImpGenerator(Sequence):
 
     def __getitem__(self, idx):
         batch_x = self.img_filenames[idx * self.batch_size : (idx + 1) * self.batch_size]
-        batch_y = self.imp_filenames[idx * self.batch_size : (idx + 1) * self.batch_size]
+        batch_y = self.map_filenames[idx * self.batch_size : (idx + 1) * self.batch_size]
 
 #         print('img names in this batch:', batch_x)
-#         print('imp names in this batch:', batch_y)
+#         print('map names in this batch:', batch_y)
 
         images = preprocess_images(batch_x, self.img_size[0], self.img_size[1])
         maps = preprocess_maps(batch_y, self.map_size[0], self.map_size[1])
@@ -479,15 +481,9 @@ class SalImpGenerator(Sequence):
             if self.n_output_maps >1:
                 outs = [outs]*self.n_output_maps
         else:
-            if self.n_output_maps ==1:
-                if self.fix_filenames is not None:
-                    outs=[maps,fixs]
-                else:
-                    outs=maps
-            else:
-                outs = [maps]*self.n_output_maps
-                if self.fix_filenames is not None:
-                    outs.append(fixs)
+            outs = [maps]*self.n_output_maps
+            fixs = [fixs]*self.n_output_fixs
+            outs.extend(fixs)
 
 #         print('generator: len(outs) should be 3:', len(outs))
 #         print('generator: outs[0].shape (should be bs,2,r,c,1):', outs[0].shape)
@@ -501,7 +497,7 @@ class SalImpGenerator(Sequence):
             idxs = list(range(len(self.img_filenames)))
             np.random.shuffle(idxs)
             self.img_filenames = self.img_filenames[idxs]
-            self.imp_filenames = self.imp_filenames[idxs]
+            self.map_filenames = self.map_filenames[idxs]
             if self.fix_filenames is not None:
                 self.fix_filenames = self.fix_filenames[idxs]
 

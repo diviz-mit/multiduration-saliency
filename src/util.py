@@ -1,9 +1,11 @@
 from multiduration_models import md_sem, sam_resnet_md
+from singleduration_models import sam_resnet_new
 from losses_keras2 import loss_wrapper, kl_time, cc_time, nss_time, cc_match
 
 MODELS = {
     'md-sem': (md_sem, 'singlestream'),
-    'sam-md': (sam_resnet_md, 'singlestream')
+    'sam-md': (sam_resnet_md, 'singlestream'), 
+    'sam-resnet': (sam_resnet_new, 'simple')
 }
 
 LOSSES = {
@@ -17,7 +19,7 @@ def get_model_by_name(name):
     """ Returns a model and a string indicating its mode of use."""
     if name not in MODELS: 
         allowed_models = list(MODELS.keys())
-        raise RuntimeError("Model %s is not recognized. Please choose one of: %s" % (name, allowed_models.join(",")))
+        raise RuntimeError("Model %s is not recognized. Please choose one of: %s" % (name, ",".join(allowed_models)))
     else: 
         return MODELS[name]
 

@@ -4,10 +4,9 @@ import json
 
 VALID_FILE_KEYS = ['img_files_train', 'map_files_train', 'fix_files_train', 'img_files_val', 'map_files_val', 'fix_files_val', 'img_files_test', 'map_files_test', 'fix_files_test', 'fixcoords_files_train', 'fixcoords_files_val', 'fixcoords_files_test']
 
-def load_datasets_sal_imp(dataset, bp="../../predimportance_shared/datasets", verbose=True):
+def load_datasets_singleduration(dataset, bp="../../predimportance_shared/datasets", verbose=True):
     ret = {}
     ret['fix_as_mat'] = False
-    ret['fix_key'] = ""
 
     if dataset == 'salicon':
         print('Using SALICON')
@@ -125,13 +124,13 @@ def load_datasets_sal_imp(dataset, bp="../../predimportance_shared/datasets", ve
         ret['img_files_test'] = img_filenames_test
 
     else: 
-        raise RuntimeError("Could not find dataset %s" % dataset)
+        raise RuntimeError("Could not find single-duration dataset %s" % dataset)
 
     if verbose: 
         print("Length of loaded files:")
         for key, val in ret.items(): 
             if key in VALID_FILE_KEYS:
-                print(key, ":", [len(elt) for elt in val])
+                print(key, ":", len(val))
             else: 
                 print(key, ":", val)
 
@@ -270,7 +269,7 @@ def load_datasets_multiduration(dataset, times, bp="", test_splits=[0], verbose=
 
     else: 
         print("WARNING: could not find multiduration dataset %s. Attempting to find a single-duration dataset." % dataset)
-        ret = load_datasets_sal_imp(dataset, bp=bp, verbose=False)
+        ret = load_datasets_singleduration(dataset, bp=bp, verbose=False)
         
         _repeat = lambda x, rep: None if x is None else [x]*rep
         rep = len(times)
