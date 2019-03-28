@@ -2,7 +2,7 @@ import os
 import numpy as np
 import json
 
-VALID_FILE_KEYS = ['img_files_train', 'map_files_train', 'fix_files_train', 'img_files_val', 'map_files_val', 'fix_files_val', 'img_files_test', 'map_files_test', 'fix_files_test']
+VALID_FILE_KEYS = ['img_files_train', 'map_files_train', 'fix_files_train', 'img_files_val', 'map_files_val', 'fix_files_val', 'img_files_test', 'map_files_test', 'fix_files_test', 'fixcoords_files_train', 'fixcoords_files_val', 'fixcoords_files_test']
 
 def load_datasets_sal_imp(dataset, bp="../../predimportance_shared/datasets", verbose=True):
     ret = {}
@@ -11,7 +11,6 @@ def load_datasets_sal_imp(dataset, bp="../../predimportance_shared/datasets", ve
 
     if dataset == 'salicon':
         print('Using SALICON')
-        ret['uses_fix'] = True
 
         img_path_train = os.path.join(bp, 'salicon', 'train')
         imp_path_train = os.path.join(bp, 'salicon', 'train_maps')
@@ -43,7 +42,6 @@ def load_datasets_sal_imp(dataset, bp="../../predimportance_shared/datasets", ve
 
     elif dataset == 'mit1003':
         print('Using MIT1003')
-        ret['uses_fix']=True
         ret['fix_as_mat']=False
 
         img_path = os.path.join(bp, "mit1003/ALLSTIMULI")
@@ -77,9 +75,8 @@ def load_datasets_sal_imp(dataset, bp="../../predimportance_shared/datasets", ve
 
     elif dataset == 'cat2000':
         print('Using CAT2000')
-        uses_fix=True
-        fix_as_mat=True
-        fix_key="fixLocs"
+        ret['fix_as_mat']=True
+        ret['fix_key']="fixLocs"
 
         # TODO: MAKE SURE THAT THE VAL SET IS ALWAYS THE SAME
         np.random.seed(42)
@@ -198,7 +195,6 @@ def load_datasets_multiduration(dataset, times, bp="", test_splits=[0], verbose=
     ret = {}
 
     ret['fix_as_mat'] = False
-    ret['uses_fix'] = True
 
     use_accum = False
     accum_suffix = "_accum" if use_accum else ""
@@ -282,7 +278,7 @@ def load_datasets_multiduration(dataset, times, bp="", test_splits=[0], verbose=
         if verbose: 
             print("Found single-duration dataset %s; making %d copies for compatability with multi-duration models" % (dataset, rep))
  
-        for key in ['map_files_train', 'fix_files_train', 'map_files_val', 'fix_files_val', 'map_files_test', 'fix_files_test']: 
+        for key in ['map_files_train', 'fix_files_train', 'map_files_val', 'fix_files_val', 'map_files_test', 'fix_files_test', 'fixcoords_files_train', 'fixcoords_files_val', 'fixcoords_files_test']: 
             if key in ret: 
                 ret[key] = rep*[ret[key]]
 

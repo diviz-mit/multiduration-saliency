@@ -11,7 +11,7 @@ def loss_wrapper(loss, input_shape):
 
 # KL-Divergence Loss
 def kl_divergence(y_true, y_pred, shape_r_out, shape_c_out):
-    print("INSIDE KL", shape_r_out)
+    print("INSIDE KL", shape_r_out, shape_c_out)
 
     max_y_pred = K.repeat_elements(K.expand_dims(K.repeat_elements(K.expand_dims(K.max(K.max(y_pred, axis=1), axis=1), axis=1),
                                                                    shape_r_out, axis=1), axis=2), shape_c_out, axis=2)
