@@ -89,8 +89,8 @@ def se_lstm_block_timedist(inp, nb_timestep, units=512, print_shapes=True, lstm_
 
     return out
 
-def sam_resnet_md(input_shape, conv_filters=512, lstm_filters=512, att_filters=512,
-                   verbose=True, print_shapes=True, n_outs=1, ups=8, **kwargs):
+def sam_resnet_md(input_shape, nb_timestep, conv_filters=512, lstm_filters=512, att_filters=512,
+                   verbose=True, print_shapes=True, n_outs=1, ups=16, nb_gaussian=16, **kwargs):
     '''SAM-ResNet ported from the original code and modified to output multiple durations.'''
     inp = Input(shape=input_shape)
 
@@ -101,7 +101,7 @@ def sam_resnet_md(input_shape, conv_filters=512, lstm_filters=512, att_filters=5
         print('Shape after first conv after dcn_resnet:',conv_feat.shape)
 
     # Attentive ConvLSTM
-    att_convlstm = Lambda(repeat, repeat_shape)(conv_feat)
+    att_convlstm = Lambda(repeat(nb_timestep), repeat_shape(nb_timestep))(conv_feat)
     att_convlstm = AttentiveConvLSTM2D(filters=lstm_filters, attentive_filters=att_filters, kernel_size=(3,3),
                             attentive_kernel_size=(3,3), padding='same', return_sequences=True)(att_convlstm)
 

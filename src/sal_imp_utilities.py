@@ -58,12 +58,16 @@ DEBUG = False
 ## number of learned priors
 #nb_gaussian = 16
 
-def repeat(x):
-    return K.repeat_elements(K.expand_dims(x,axis=1), nb_timestep, axis=1)
+def repeat(nb_timestep):
+    def _inner(x): 
+        return K.repeat_elements(K.expand_dims(x,axis=1), nb_timestep, axis=1)
+    return _inner
 #     return K.reshape(K.repeat(K.batch_flatten(x), nb_timestep), (1, nb_timestep, shape_r_gt, shape_c_gt, 512))
 
-def repeat_shape(s):
-    return (s[0], nb_timestep) + s[1:]
+def repeat_shape(nb_timestep):
+    def _inner(s): 
+        return (s[0], nb_timestep) + s[1:]
+    return _inner
 
 
 def padding(img, shape_r, shape_c, channels=3):

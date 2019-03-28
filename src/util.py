@@ -3,7 +3,7 @@ from losses_keras2 import loss_wrapper, kl_time, cc_time, nss_time, cc_match
 
 MODELS = {
     'md-sem': (md_sem, 'singlestream'),
-    'sam-md': (sam_resnet_md, 'multistream-concat')
+    'sam-md': (sam_resnet_md, 'singlestream')
 }
 
 LOSSES = {
