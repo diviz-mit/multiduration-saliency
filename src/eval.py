@@ -5,7 +5,8 @@ import scipy.ndimage
 import matplotlib.pyplot as plt
 import scipy.stats
 from keras.utils import Sequence
-from eval_saliconeval import *
+from sal_imp_utilities import *
+#from eval_saliconeval import *
 
 def visualize_samples(model, gen, times):
     images, maps = gen.__getitem__(np.random.randint(len(gen_val)))
@@ -228,14 +229,13 @@ def calculate_metrics(p, gt_map=None, gt_fix_map=None, gt_fix_points=None):
         metrics['R2'] = [r2(gt_map, p_norm)]
         metrics['RMSE'] = [rmse(gt_map, p_norm)]
         metrics['CC'] = [cc_npy(gt_map, p_norm)]
-        metrics['CC (saliconeval)'] = [cc_saliconeval(gt_map, p_norm)]
         metrics['KL'] = [kl_npy(gt_map, p_norm)]
         metrics['SIM'] = [sim_npy(gt_map, p_norm)]
     if gt_fix_map is not None:
         metrics['NSS'] = [nss_npy(gt_fix_map, p_norm)]
-    if gt_fix_points is not None:
-        metrics['NSS (saliconeval)'] = [nss_saliconeval(gt_fix_points, p_norm)]
-        metrics['AUC'] = [auc_saliconeval(gt_fix_points, p)]
+#    if gt_fix_points is not None:
+#        metrics['NSS (saliconeval)'] = [nss_saliconeval(gt_fix_points, p_norm)]
+#        metrics['AUC'] = [auc_saliconeval(gt_fix_points, p)]
 
     return metrics
 
@@ -363,10 +363,12 @@ def get_stats_multiduration(model, gen_eval, mode='multistream_concat', blur=Fal
             for t_higher, v in others.items():
                 print("CC for times %d and %d" % (t_lower, t_higher), np.mean(v))
 
-    if not return_top_bot_n:
-        return all_m, m_by_time, combos
-    else:
-        return all_m, m_by_time, combos, top_n, bot_n
+    ret = [all_m, m_by_time]
+    if compare_across_times: 
+        ret.append(combos)
+    if return_top_bot_n: 
+        ret.extend([top_n, bot_n])
+    return ret
     
 def get_stats_oneduration(model, gen_eval, mode='multistream_concat', blur=False, start_at=False, t=0):
     ''' Function to calculate metrics from a model, based on the model object and a generator.

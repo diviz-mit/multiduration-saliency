@@ -26,7 +26,6 @@ def kl_divergence(y_true, y_pred, shape_r_out, shape_c_out):
     y_pred /= (sum_y_pred + K.epsilon())
 
 
-    # This constant was defined by Cornia et al. and is a bit arbitrary
     return K.sum(K.sum(y_true * K.log((y_true / (y_pred + K.epsilon())) + K.epsilon()), axis=1), axis=1)
 
 def kl_time(y_true, y_pred, shape_r_out, shape_c_out):

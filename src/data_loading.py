@@ -4,7 +4,10 @@ import json
 
 VALID_FILE_KEYS = ['img_files_train', 'map_files_train', 'fix_files_train', 'img_files_val', 'map_files_val', 'fix_files_val', 'img_files_test', 'map_files_test', 'fix_files_test', 'fixcoords_files_train', 'fixcoords_files_val', 'fixcoords_files_test']
 
-def load_datasets_singleduration(dataset, bp="../../predimportance_shared/datasets", verbose=True):
+# keys that change format for single and multi-duration datasets
+DIFFERENT_FORMAT_KEYS = ['map_files_train', 'fix_files_train', 'map_files_val', 'fix_files_val', 'map_files_test', 'fix_files_test', 'fixcoords_files_train', 'fixcoords_files_val', 'fixcoords_files_test']
+
+def load_datasets_singleduration(dataset, bp="../../predimportance_shared/datasets", verbose=True, search_multidur=True, attime=5000):
     ret = {}
     ret['fix_as_mat'] = False
 
@@ -124,7 +127,15 @@ def load_datasets_singleduration(dataset, bp="../../predimportance_shared/datase
         ret['img_files_test'] = img_filenames_test
 
     else: 
-        raise RuntimeError("Could not find single-duration dataset %s" % dataset)
+        if search_multidur: 
+            print("WARNING: could not find single-duration dataset %s, searching multi-duration datasets" % dataset)
+            ret = load_datasets_multiduration(dataset, times=[attime], bp=bp, test_splits=[0], verbose=False, search_singledur=False)
+            print("Taking timestep %d from multiduration dataset" % attime)
+            for key in DIFFERENT_FORMAT_KEYS: 
+                if key in ret: 
+                    ret[key] = ret[key][0]
+        else: 
+            raise RuntimeError("Could not find dataset %s" % dataset)
 
     if verbose: 
         print("Length of loaded files:")
@@ -190,7 +201,7 @@ def load_multiduration_data(img_folder, map_folder, fix_folder, times=[500,3000,
     return img_filenames, map_filenames, fix_filenames
 
 
-def load_datasets_multiduration(dataset, times, bp="", test_splits=[0], verbose=True):
+def load_datasets_multiduration(dataset, times, bp="", test_splits=[0], verbose=True, search_singledur=True):
     ret = {}
 
     ret['fix_as_mat'] = False
@@ -248,10 +259,11 @@ def load_datasets_multiduration(dataset, times, bp="", test_splits=[0], verbose=
             ret['fix_files_test'].append([f for f in fix_files[t] if img_in(f, test)])
 
     elif dataset == "salicon_md" or dataset == "salicon_md_fixations":
+        dsets = {}
         for mode in ["train", "val"]:
-            img_path = os.path.join(bp, mode, "raw_img" + accum_suffix)
-            map_path = os.path.join(bp, mode, "heatmaps" + accum_suffix)
-            fix_path = os.path.join(bp, mode, "fix_maps" + accum_suffix)
+            img_path = os.path.join(bp, dataset, mode, "raw_img" + accum_suffix)
+            map_path = os.path.join(bp, dataset, mode, "heatmaps" + accum_suffix)
+            fix_path = os.path.join(bp, dataset, mode, "fix_maps" + accum_suffix)
             data = load_multiduration_data(img_path, map_path, fix_path, times=times)
             dsets[mode] = data
 
@@ -268,18 +280,21 @@ def load_datasets_multiduration(dataset, times, bp="", test_splits=[0], verbose=
         ret['img_files_test'] = sorted([os.path.join(img_path_test, f) for f in os.listdir(img_path_test)])
 
     else: 
-        print("WARNING: could not find multiduration dataset %s. Attempting to find a single-duration dataset." % dataset)
-        ret = load_datasets_singleduration(dataset, bp=bp, verbose=False)
-        
-        _repeat = lambda x, rep: None if x is None else [x]*rep
-        rep = len(times)
+        if search_singledur:
+            print("WARNING: could not find multiduration dataset %s. Attempting to find a single-duration dataset." % dataset)
+            ret = load_datasets_singleduration(dataset, bp=bp, verbose=False, search_multidur=False)
+            
+            _repeat = lambda x, rep: None if x is None else [x]*rep
+            rep = len(times)
 
-        if verbose: 
-            print("Found single-duration dataset %s; making %d copies for compatability with multi-duration models" % (dataset, rep))
- 
-        for key in ['map_files_train', 'fix_files_train', 'map_files_val', 'fix_files_val', 'map_files_test', 'fix_files_test', 'fixcoords_files_train', 'fixcoords_files_val', 'fixcoords_files_test']: 
-            if key in ret: 
-                ret[key] = rep*[ret[key]]
+            if verbose: 
+                print("Found single-duration dataset %s; making %d copies for compatability with multi-duration models" % (dataset, rep))
+     
+            for key in DIFFERENT_FORMAT_KEYS:
+                if key in ret: 
+                    ret[key] = rep*[ret[key]]
+        else: 
+            raise RuntimeError("Could not find multiduration dataset %s" % dataset)
 
     if verbose: 
         for key, val in ret.items(): 

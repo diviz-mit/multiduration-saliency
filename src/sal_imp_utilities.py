@@ -212,7 +212,10 @@ def postprocess_predictions(pred, shape_r, shape_c, blur=False, normalize=False)
     pred = pred / np.max(pred) * 255
 
 #    print('Preparing to resize...')
-
+    if blur:
+        sigma=blur
+        pred = scipy.ndimage.filters.gaussian_filter(pred, sigma=sigma)
+ 
     if rows_rate > cols_rate:
         new_cols = (predictions_shape[1] * shape_r) // predictions_shape[0]
         pred = cv2.resize(pred, (new_cols, shape_r))
@@ -225,9 +228,6 @@ def postprocess_predictions(pred, shape_r, shape_c, blur=False, normalize=False)
 
 #    print('Resized')
 
-    if blur:
-        sigma=blur
-        img = scipy.ndimage.filters.gaussian_filter(img, sigma=sigma)
     if normalize:
         img = img / np.max(img) * 255
 
