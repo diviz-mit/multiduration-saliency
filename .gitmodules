@@ -1,3 +1,7 @@
 [submodule "applications/flickr-cropping-dataset"]
 	path = applications/flickr-cropping-dataset
 	url = https://github.com/mzhangyb/flickr-cropping-dataset.git
+[submodule "applications/self-critical.pytorch"]
+	path = applications/self-critical.pytorch
+	url = https://github.com/mzhangyb/self-critical.pytorch.git
+	branch = py3
