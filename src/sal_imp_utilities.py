@@ -18,45 +18,6 @@ from copy import deepcopy
 
 # DEBUG
 DEBUG = False
-## number of rows of input images
-#cat2000_c = 1920
-#cat2000_r = 1080
-##cat2000_r_out = 1088 # this is divisible by 16
-#cat2000_r_out = 1104 # divible by 48
-#cat2000_c_out = cat2000_c # already divisible by 16
-#
-#cc_c = 300
-#cc_r = 225
-#cc_c_out = 1776
-#cc_r_out = 1344
-#
-##shape_r = int(cat2000_r/6)
-#shape_r = 240
-##shape_r = cc_r
-## number of cols of input images
-##shape_c = int(cat2000_c/6)
-#shape_c = 320
-##shape_c = cc_c
-## number of rows of downsampled maps
-#shape_r_gt = 30
-## number of cols of downsampled maps
-#shape_c_gt = 40
-## number of rows of model outputs
-##shape_r_out = cat2000_r_out
-#shape_r_out = 480
-##shape_r_out = cc_r_out
-## number of cols of model outputs
-##shape_c_out = cat2000_c_out
-#shape_c_out = 640
-##shape_c_out = cc_c_out
-## final upsampling factor
-#upsampling_factor = 16
-## number of epochs
-#nb_epoch = 50
-## number of timesteps
-#nb_timestep = 3
-## number of learned priors
-#nb_gaussian = 16
 
 def repeat(nb_timestep):
     def _inner(x): 
@@ -509,7 +470,8 @@ def eval_generator(
     inp_size,
     fix_as_mat=False,
     fix_key="",
-    fixcoord_filetype='mat'):
+    fixcoord_filetype='mat',
+    return_name=False):
     """
         Returns tuples img, heatmap, fixmap, fix_coords to be used for data eval
 
@@ -523,6 +485,7 @@ def eval_generator(
     n_times = len(map_filenames)
     n_img = len(map_filenames[0])
     for i in range(n_img):
+        name = img_filenames[i]
         imgs = []
         maps = []
         fixmaps = []
@@ -562,4 +525,7 @@ def eval_generator(
             maps.append(map_)
             fixmaps.append(fixmap)
             fixcoords.append(all_fixations)
-        yield (imgs, maps, fixmaps, fixcoords)
+        ret = [imgs, maps, fixmaps, fixcoords]
+        if return_name: 
+            ret.append(name)
+        yield ret

@@ -30,7 +30,7 @@ def get_loss_by_name(name, out_size):
     `name` so that keras can interpret it as a keras loss.
     """
     if name not in LOSSES: 
-        print("WARNING: foudn no custom loss with name %s, defaulting to a string." % name)
+        print("WARNING: found no custom loss with name %s, defaulting to a string." % name)
         return name, 'heatmap'
     else: 
         loss, out_type = LOSSES[name]

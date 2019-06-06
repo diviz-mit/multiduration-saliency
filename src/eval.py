@@ -137,7 +137,6 @@ def predict_and_save(model, test_img, inp_size, savedir, mode='multistream_conca
         p_norm = (p-np.min(p))/(np.max(p)-np.min(p))
         p_img = p_norm*255
         hm_img = Image.fromarray(np.uint8(p_img), "L")
-        print("hm_img shape", hm_img.shape)
 
         imname = os.path.splitext(os.path.basename(imfile))[0] + "." + ext
         if test_img_base_path:
