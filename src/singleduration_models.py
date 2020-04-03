@@ -18,9 +18,18 @@ from multiduration_models import decoder_block_timedist
 from xception_custom import Xception_wrapper
 from keras.applications import keras_modules_injection
 
-def sam_resnet_new(input_shape, conv_filters=512, lstm_filters=512, att_filters=512, verbose=True, print_shapes=True, n_outs=1, ups=16, nb_gaussian=16, n_lstm_cells=3, **kwargs):
+def sam_resnet_new(input_shape, 
+                   conv_filters=512, 
+                   lstm_filters=512, 
+                   att_filters=512, 
+                   verbose=True, 
+                   print_shapes=True, 
+                   n_outs=1, 
+                   ups=16, 
+                   nb_gaussian=16, 
+                   n_lstm_cells=3, 
+                   **kwargs):
     '''SAM-ResNet ported from the original code.'''
-    print("n_outs", n_outs)
 
     inp = Input(shape=input_shape)
 
@@ -31,8 +40,12 @@ def sam_resnet_new(input_shape, conv_filters=512, lstm_filters=512, att_filters=
 
     # Attentive ConvLSTM
     att_convlstm = Lambda(repeat(n_lstm_cells), repeat_shape(n_lstm_cells))(conv_feat)
-    att_convlstm = AttentiveConvLSTM2D(filters=lstm_filters, attentive_filters=att_filters, kernel_size=(3,3),
-                            attentive_kernel_size=(3,3), padding='same', return_sequences=False)(att_convlstm)
+    att_convlstm = AttentiveConvLSTM2D(filters=lstm_filters, 
+                                       attentive_filters=att_filters, 
+                                       kernel_size=(3,3),
+                                       attentive_kernel_size=(3,3), 
+                                       padding='same', 
+                                       return_sequences=False)(att_convlstm)
 
     # Learned Prior (1)
     priors1 = LearningPrior(nb_gaussian=nb_gaussian)(att_convlstm)
