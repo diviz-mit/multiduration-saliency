@@ -1,3 +1,8 @@
+# custom 
+mdsem_preds_visualized/
+mdsem_preds/
+codecharts_data/
+
 # swp files 
 *.sw[oap]
 
