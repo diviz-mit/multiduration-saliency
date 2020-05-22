@@ -7,3 +7,6 @@
 	url = https://github.com/mzhangyb/self-critical.pytorch.git
 	branch = py3
         ignore = dirty
+[submodule "applications/Mask_RCNN"]
+	path = applications/Mask_RCNN
+	url = https://github.com/matterport/Mask_RCNN

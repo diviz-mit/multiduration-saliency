@@ -3,6 +3,7 @@ mdsem_preds_visualized/
 mdsem_preds/
 anelise/
 codecharts_data
+applications/mask_rcnn_coco.h5
 
 # swp files 
 *.sw[oap]
