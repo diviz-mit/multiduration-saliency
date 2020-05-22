@@ -5,6 +5,7 @@ anelise/
 codecharts_data
 applications/cropping_tmp/
 applications/mask_rcnn_coco.h5
+applications/render_results/
 
 # swp files 
 *.sw[oap]
