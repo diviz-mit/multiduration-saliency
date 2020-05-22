@@ -6,6 +6,8 @@ codecharts_data
 applications/cropping_tmp/
 applications/mask_rcnn_coco.h5
 applications/render_results/
+applications/infos_td-best.pkl
+applications/model-best.pth
 
 # swp files 
 *.sw[oap]
