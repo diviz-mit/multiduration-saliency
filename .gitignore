@@ -1,7 +1,8 @@
 # custom 
 mdsem_preds_visualized/
 mdsem_preds/
-codecharts_data/
+anelise/
+codecharts_data
 
 # swp files 
 *.sw[oap]
@@ -9,6 +10,7 @@ codecharts_data/
 # python
 __pycache__/
 *.py[cod]
+.mypy_cache/
 
 # environments
 .env
