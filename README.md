@@ -36,9 +36,12 @@ This repo contains models and source code for predicting multi-duration saliency
 
 <!-- We provide two ipython notebooks to demonstrate how to use our code. `train_multiduration.ipynb` walks through training and evaluating multi-duration models (like MD-SEM or SAM-MD), while `train_singleduration.ipynb` covers models that only handle one duration (SAM). Fill in the cells marked "FILL IN HERE" with the appropriate values. -->
 
-<!-- To perform inference on a few images, we provide the mdsem_simple_inference.ipynb notebook, where our pretrained checkpoints on codecharts and salicon can be loaded and saliency maps can be generated from a few test images. To run this notebook, first clone the repository, then place your test images in the `images/` folder. Download the checkpoints from our website and place them in a folder named `ckpt/`. Once those steps are completed, you should be able to run our models. -->
+
 
 ## Contents
+
+#### Inference notebook
+To perform inference on a few images, we provide the mdsem_simple_inference.ipynb notebook, where our pretrained checkpoints on codecharts and salicon can be loaded and saliency maps can be generated from a few test images. To run this notebook, first clone the repository, then place your test images in the `images/` folder. Download the checkpoints from our website and place them in a folder named `ckpt/`. Once those steps are completed, you should be able to run our models.
 
 #### Important source files
 
