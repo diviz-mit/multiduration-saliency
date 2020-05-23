@@ -1,17 +1,17 @@
 # Multi-Duration Saliency Models
 
-Source code for our paper "How Many Glances? Modeling Multi-duration Saliency". 
+Source code for our paper "How Many Glances? Modeling Multi-duration Saliency".
 
-This repo contains models and source code for predicting multi-duration saliency. To get started, download the [CodeCharts1k multi-duration saliency dataset](http://multiduration-saliency.csail.mit.edu/codecharts_data.zip). 
+This repo contains models and source code for predicting multi-duration saliency. To get started, download the [CodeCharts1k multi-duration saliency dataset](http://multiduration-saliency.csail.mit.edu/codecharts_data.zip).
 
-<!-- and walk through the notebook `train_multiduration.ipynb`. --> 
+<!-- and walk through the notebook `train_multiduration.ipynb`. -->
 
-<!-- Models are written in Keras 2. --> 
+<!-- Models are written in Keras 2. -->
 
 
 <!-- ## Models -->
 
-<!-- This repo contains source code for the following models: --> 
+<!-- This repo contains source code for the following models: -->
 <!-- - Multi-Duration Saliency Excited Model (MD-SEM): a lightweight network designed for predicting multi-duration saliency -->
 <!-- - SAM Multi-Duration (SAM-MD): a version of SAM modified to produce multiple outputs corresponding to multiple viewing durations -->
 <!-- - SAM-Resnet: a reimplementation of the original SAM in Keras 2. Handles only single-duration saliency prediction. -->
@@ -34,14 +34,16 @@ This repo contains models and source code for predicting multi-duration saliency
 
 <!-- #### Running code -->
 
-<!-- We provide two ipython notebooks to demonstrate how to use our code. `train_multiduration.ipynb` walks through training and evaluating multi-duration models (like MD-SEM or SAM-MD), while `train_singleduration.ipynb` covers models that only handle one duration (SAM). Fill in the cells marked "FILL IN HERE" with the appropriate values. --> 
+<!-- We provide two ipython notebooks to demonstrate how to use our code. `train_multiduration.ipynb` walks through training and evaluating multi-duration models (like MD-SEM or SAM-MD), while `train_singleduration.ipynb` covers models that only handle one duration (SAM). Fill in the cells marked "FILL IN HERE" with the appropriate values. -->
+
+<!-- To perform inference on a few images, we provide the mdsem_simple_inference.ipynb notebook, where our pretrained checkpoints on codecharts and salicon can be loaded and saliency maps can be generated from a few test images. To run this notebook, first clone the repository, then place your test images in the `images/` folder. Download the checkpoints from our website and place them in a folder named `ckpt/`. Once those steps are completed, you should be able to run our models. -->
 
 ## Contents
 
 #### Important source files
 
-- `src/multiduration_models.py`: model definitions for multi-duration models. 
-- `src/singleduration_models.py`: model definitions for single-duration models. 
+- `src/multiduration_models.py`: model definitions for multi-duration models.
+- `src/singleduration_models.py`: model definitions for single-duration models.
 - `src/losses_keras2.py`: loss functions used in training
 - `src/data_loading.py`: helper functions to load saliency data sets
 - `src/eval.py`: helper functions for evaluating models on common saliency metrics and saving predictions
