@@ -2,12 +2,6 @@ import keras.backend as K
 import numpy as np
 from sal_imp_utilities import *
 
-def loss_wrapper(loss, input_shape): 
-    shape_r_out, shape_c_out = input_shape
-    print("shape r out, shape c out", shape_r_out, shape_c_out)
-    def _wrapper(y_true, y_pred): 
-        return loss(y_true, y_pred, shape_r_out, shape_c_out)
-    return _wrapper
 # KL-Divergence Loss
 def kl_divergence(y_true, y_pred):
 
@@ -180,7 +174,7 @@ def nss(y_true, y_pred):
 
     return nss_out
 
-def cc_match(y_true, y_pred, shape_r_out, shape_c_out):
+def cc_match(y_true, y_pred):
     '''Calculates CC between initial, mid and final timestep from both y_true and y_pred
     and calculates the mean absolute error between the CCs from y_true and from y_pred.
     Requires a y_true and y_pred to be tensors of shape (bs, t, r, c, 1)'''

@@ -60,13 +60,13 @@ class InteractivePlot(keras.callbacks.Callback):
 
 
 
-def ckpt_callback(model_name, dataset, l_str, extra_str='',
+def ckpt_callback(model_name, dataset, l_str, bs, extra_str='',
                 period=1, save_weights_only=True,
                 ckpt_folder_path = '../../predimportance_shared/models/ckpt/'):
     path = os.path.join(ckpt_folder_path, model_name)
     if not os.path.exists(path):
         os.makedirs(path)
-    filepath = os.path.join(path, model_name+'_'+dataset+'_'+l_str+extra_str+'_ep{epoch:02d}_valloss{val_loss:.4f}.hdf5')
+    filepath = os.path.join(path, model_name+'_'+dataset+'_'+l_str+'_bs'+str(bs)+extra_str+'_ep{epoch:02d}_valloss{val_loss:.4f}.hdf5')
     cb_chk = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_weights_only=True, period=1)
     return cb_chk
 

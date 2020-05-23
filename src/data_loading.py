@@ -2,17 +2,56 @@ import os
 import numpy as np
 import json
 
-VALID_FILE_KEYS = ['img_files_train', 'map_files_train', 'fix_files_train', 'img_files_val', 'map_files_val', 'fix_files_val', 'img_files_test', 'map_files_test', 'fix_files_test', 'fixcoords_files_train', 'fixcoords_files_val', 'fixcoords_files_test']
+def load_datasets_sal_imp(dataset, bp="../../predimportance_shared/datasets", return_test=False):
+    fix_as_mat=False
+    fix_key=None
 
-# keys that change format for single and multi-duration datasets
-DIFFERENT_FORMAT_KEYS = ['map_files_train', 'fix_files_train', 'map_files_val', 'fix_files_val', 'map_files_test', 'fix_files_test', 'fixcoords_files_train', 'fixcoords_files_val', 'fixcoords_files_test']
+    if dataset == 'gdi':
+        print('Using GDI')
 
-def load_datasets_singleduration(dataset, bp="../../predimportance_shared/datasets", verbose=True, search_multidur=True, attime=5000):
-    ret = {}
-    ret['fix_as_mat'] = False
+        uses_fix =False
+        has_classes = False
 
-    if dataset == 'salicon':
+        img_path_train = os.path.join(bp,'gdi/gd_train')
+        imp_path_train = os.path.join(bp,'gdi/gd_imp_train')
+        img_path_val = os.path.join(bp,'gdi/gd_val')
+        imp_path_val = os.path.join(bp,'gdi/gd_imp_val')
+
+        img_filenames_train = sorted([os.path.join(img_path_train, f) for f in os.listdir(img_path_train)])
+        imp_filenames_train = sorted([os.path.join(imp_path_train, f) for f in os.listdir(imp_path_train)])
+        img_filenames_val = sorted([os.path.join(img_path_val, f) for f in os.listdir(img_path_val)])
+        imp_filenames_val = sorted([os.path.join(imp_path_val, f) for f in os.listdir(imp_path_val)])
+
+        # Dummy variables
+        fix_filenames_train = None #np.array([])
+        fix_filenames_val = None #np.array([])
+
+
+    elif dataset == 'graphs':
+        print('Using GRAPHS')
+
+        uses_fix=False
+        has_classes = False
+
+        img_path_train = '../../predimportance_shared/datasets/graphs/graphs_train'
+        imp_path_train = '../../predimportance_shared/datasets/graphs/graphs_imp_train'
+        img_path_val = '../../predimportance_shared/datasets/graphs/graphs_val'
+        imp_path_val = '../../predimportance_shared/datasets/graphs/graphs_imp_val'
+
+        img_filenames_train = sorted([os.path.join(img_path_train, f) for f in os.listdir(img_path_train)])
+        imp_filenames_train = sorted([os.path.join(imp_path_train, f) for f in os.listdir(imp_path_train)])
+        img_filenames_val = sorted([os.path.join(img_path_val, f) for f in os.listdir(img_path_val)])
+        imp_filenames_val = sorted([os.path.join(imp_path_val, f) for f in os.listdir(imp_path_val)])
+
+        # Dummy variables
+        fix_filenames_train = None #np.array([])
+        fix_filenames_val = None # np.array([])
+
+    elif dataset == 'salicon':
         print('Using SALICON')
+
+        uses_fix=True
+        has_classes = False
 
         img_path_train = os.path.join(bp, 'salicon', 'train')
         imp_path_train = os.path.join(bp, 'salicon', 'train_maps')
@@ -28,23 +67,38 @@ def load_datasets_singleduration(dataset, bp="../../predimportance_shared/datase
         fixcoords_path_train = os.path.join(bp, 'salicon', 'train_fix')
         fixcoords_path_val = os.path.join(bp, 'salicon', 'val_fix')
 
-        ret['img_files_train'] = sorted([os.path.join(img_path_train, f) for f in os.listdir(img_path_train)])
-        ret['map_files_train'] = sorted([os.path.join(imp_path_train, f) for f in os.listdir(imp_path_train)])
+        img_filenames_train = sorted([os.path.join(img_path_train, f) for f in os.listdir(img_path_train)])
+        imp_filenames_train = sorted([os.path.join(imp_path_train, f) for f in os.listdir(imp_path_train)])
 
-        ret['img_files_val'] = sorted([os.path.join(img_path_val, f) for f in os.listdir(img_path_val)])
-        ret['map_files_val'] = sorted([os.path.join(imp_path_val, f) for f in os.listdir(imp_path_val)])
+        img_filenames_val = sorted([os.path.join(img_path_val, f) for f in os.listdir(img_path_val)])
+        imp_filenames_val = sorted([os.path.join(imp_path_val, f) for f in os.listdir(imp_path_val)])
 
-        ret['img_files_test'] = sorted([os.path.join(img_path_test, f) for f in os.listdir(img_path_test)])
+        img_filenames_test = sorted([os.path.join(img_path_test, f) for f in os.listdir(img_path_test)])
 
-        ret['fix_files_train'] = sorted([os.path.join(fix_path_train, f) for f in os.listdir(fix_path_train) if f.endswith('.png')])
-        ret['fix_files_val'] = sorted([os.path.join(fix_path_val, f) for f in os.listdir(fix_path_val) if f.endswith('.png')])
+        fix_filenames_train = sorted([os.path.join(fix_path_train, f) for f in os.listdir(fix_path_train) if f.endswith('.png')])
+        fix_filenames_val = sorted([os.path.join(fix_path_val, f) for f in os.listdir(fix_path_val) if f.endswith('.png')])
 
-        ret['fixcoords_files_train'] = sorted([os.path.join(fixcoords_path_train, f) for f in os.listdir(fixcoords_path_train)])
-        ret['fixcoords_files_val'] = sorted([os.path.join(fixcoords_path_val, f) for f in os.listdir(fixcoords_path_val)])
+        fixcoords_filenames_train = sorted([os.path.join(fixcoords_path_train, f) for f in os.listdir(fixcoords_path_train)])
+        fixcoords_filenames_val = sorted([os.path.join(fixcoords_path_val, f) for f in os.listdir(fixcoords_path_val)])
+
+
+        print('Length of loaded files:')
+        print('train images:', len(img_filenames_train))
+        print('train maps:', len(imp_filenames_train))
+        print('val images:', len(img_filenames_val))
+        print('val maps:', len(imp_filenames_val))
+        print('test images', len(img_filenames_test))
+
+        print('train fixs:', len(fix_filenames_train))
+        print('val fixs:', len(fix_filenames_val))
+        print('train fixcoords:', len(fixcoords_filenames_train))
+        print('val fixcoords:', len(fixcoords_filenames_val))
+
 
     elif dataset == 'mit1003':
         print('Using MIT1003')
-        ret['fix_as_mat']=False
+        uses_fix=True
+        has_classes = False
 
         img_path = os.path.join(bp, "mit1003/ALLSTIMULI")
         imp_path = os.path.join(bp, 'mit1003/ALLFIXATIONMAPS')
@@ -62,23 +116,91 @@ def load_datasets_singleduration(dataset, bp="../../predimportance_shared/datase
         maps = np.array(maps)[idxs]
         fixs = np.array(fixs)[idxs]
 
-        ret['img_files_train'] = imgs[:903]
-        ret['map_files_train'] = maps[:903]
-        ret['fix_files_train'] = fixs[:903]
-        ret['img_files_val'] = imgs[903:]
-        ret['map_files_val'] = maps[903:]
-        ret['fix_files_val'] = fixs[903:]
-        
+        img_filenames_train = imgs[:903]
+        imp_filenames_train = maps[:903]
+        fix_filenames_train = fixs[:903]
+        img_filenames_val = imgs[903:]
+        imp_filenames_val = maps[903:]
+        fix_filenames_val = fixs[903:]
+
+        #print('Length of loaded files:')
+        #print('train images:', len(img_filenames_train))
+        #print('train maps:', len(imp_filenames_train))
+        #print('val images:', len(img_filenames_val))
+        #print('val maps:', len(imp_filenames_val))
+        ##print('test images', len(img_filenames_test))
+
+        #print('train fixs:', len(fix_filenames_train))
+        #print('val fixs:', len(fix_filenames_val))
+        #print('train fixcoords:', len(fix_filenames_train))
+        #print('val fixcoords:', len(fix_filenames_val))
+
+
     elif dataset == 'mit300':
         img_path = os.path.join(bp, 'mit300')
         #img_path = '../../predimportance_shared/datasets/mit300'
         imgs = sorted([os.path.join(img_path, f) for f in os.listdir(img_path) if f.endswith('.jpg')])
-        ret['img_files_test'] = imgs
+        print("num images", len(imgs))
+        return imgs, None, None, None, None, None, False, False, False
+
+
+    elif dataset == 'imp1k':
+        print('Using imp1k')
+
+        k = 40
+        uses_fix=False
+        has_classes=True
+
+        img_path = os.path.join(bp, 'imp1k', 'imgs')
+        imp_path = os.path.join(bp, 'imp1k', 'maps')
+
+        img_filenames_train = np.array([])
+        imp_filenames_train = np.array([])
+        img_filenames_val = np.array([])
+        imp_filenames_val = np.array([])
+
+        use_tts_file=True
+
+        if not use_tts_file:
+            for f in os.listdir(img_path):
+                print('Categ:',f)
+                imgs = sorted([os.path.join(img_path, f, i) for i in os.listdir(os.path.join(img_path,f)) if i.endswith(('.png','.jpg'))])
+                maps = sorted([os.path.join(imp_path, f, i) for i in os.listdir(os.path.join(imp_path,f)) if i.endswith(('.png','.jpg'))])
+
+                idxs = list(range(len(imgs)))
+                np.random.shuffle(idxs)
+                imgs = np.array(imgs)[idxs]
+                maps = np.array(maps)[idxs]
+
+                img_filenames_train = np.concatenate([img_filenames_train,imgs[:-k]], axis=None)
+                img_filenames_val = np.concatenate([img_filenames_val,imgs[-k:]], axis=None)
+                imp_filenames_train = np.concatenate([imp_filenames_train,maps[:-k]], axis=None)
+                imp_filenames_val = np.concatenate([imp_filenames_val,maps[-k:]], axis=None)
+
+        else:
+            with open(os.path.join(bp, 'imp1k', 'train_test_split_imp1k.json'), 'r') as f:
+                tt_s = json.load(f)
+
+            train_names = tt_s[0]
+            test_names = tt_s[1]
+
+            img_filenames_train = [os.path.join(img_path, n) for n in train_names]
+            imp_filenames_train = [os.path.join(imp_path, n) for n in train_names]
+
+            img_filenames_val = [os.path.join(img_path, n) for n in test_names]
+            imp_filenames_val = [os.path.join(imp_path, n) for n in test_names]
+
+
+        # Dummy variables
+        fix_filenames_train = None #np.array(['dummy']*len(img_filenames_train))
+        fix_filenames_val = None #np.array(['dummy']*len(img_filenames_val))
 
     elif dataset == 'cat2000':
         print('Using CAT2000')
-        ret['fix_as_mat']=True
-        ret['fix_key']="fixLocs"
+        uses_fix=True
+        fix_as_mat=True
+        fix_key="fixLocs"
+        has_classes = True
 
         # TODO: MAKE SURE THAT THE VAL SET IS ALWAYS THE SAME
         np.random.seed(42)
@@ -118,34 +240,26 @@ def load_datasets_singleduration(dataset, bp="../../predimportance_shared/datase
             new_files = sorted([os.path.join(img_path_test, f, i) for i in os.listdir(os.path.join(img_path_test, f)) if i.endswith('.jpg')])
             img_filenames_test = np.concatenate([img_filenames_test, new_files], axis=None)
 
-        ret['img_files_train'] = img_filenames_train
-        ret['img_files_val'] = img_filenames_val
-        ret['map_files_train'] = imp_filenames_train
-        ret['map_files_val'] = imp_filenames_val
-        ret['fix_files_train'] = fix_filenames_train
-        ret['fix_files_val'] = fix_filenames_val
-        ret['img_files_test'] = img_filenames_test
+    print('Length of loaded files:')
+    print('train images:', len(img_filenames_train))
+    print('train maps:', len(imp_filenames_train))
+    print('val images:', len(img_filenames_val))
+    print('val maps:', len(imp_filenames_val))
+    if return_test:
+        print('test images', len(img_filenames_test))
+    
+    if fix_filenames_train and fix_filenames_val:
+        print('train fixs:', len(fix_filenames_train))
+        print('val fixs:', len(fix_filenames_val))
+#        print('train fixcoords:', len(fixcoords_filenames_train))
+#        print('val fixcoords:', len(fixcoords_filenames_val))
 
-    else: 
-        if search_multidur: 
-            print("WARNING: could not find single-duration dataset %s, searching multi-duration datasets" % dataset)
-            ret = load_datasets_multiduration(dataset, times=[attime], bp=bp, test_splits=[0], verbose=False, search_singledur=False)
-            print("Taking timestep %d from multiduration dataset" % attime)
-            for key in DIFFERENT_FORMAT_KEYS: 
-                if key in ret: 
-                    ret[key] = ret[key][0]
-        else: 
-            raise RuntimeError("Could not find dataset %s" % dataset)
 
-    if verbose: 
-        print("Length of loaded files:")
-        for key, val in ret.items(): 
-            if key in VALID_FILE_KEYS:
-                print(key, ":", len(val))
-            else: 
-                print(key, ":", val)
+    if return_test:
+        return img_filenames_train, imp_filenames_train, fix_filenames_train, img_filenames_val, imp_filenames_val, fix_filenames_val, img_filenames_test, uses_fix, fix_as_mat, fix_key, has_classes
+    else:
+        return img_filenames_train, imp_filenames_train, fix_filenames_train, img_filenames_val, imp_filenames_val, fix_filenames_val, uses_fix, fix_as_mat, fix_key, has_classes
 
-    return ret
 
 def load_multiduration_data(img_folder, map_folder, fix_folder, times=[500,3000,5000]):
     '''
@@ -185,7 +299,7 @@ def load_multiduration_data(img_folder, map_folder, fix_folder, times=[500,3000,
 
     avlb_times = sorted([int(elt) for elt in os.listdir(map_folder)])
     print('avlb_times',avlb_times)
-    
+
     for t in avlb_times:
         if t in times:
             print('APPENDING IMAGES FOR TIME:', t)
@@ -201,30 +315,57 @@ def load_multiduration_data(img_folder, map_folder, fix_folder, times=[500,3000,
     return img_filenames, map_filenames, fix_filenames
 
 
-def load_datasets_multiduration(dataset, times, bp="", test_splits=[0], verbose=True, search_singledur=True):
-    ret = {}
-
-    ret['fix_as_mat'] = False
-
+def load_datasets_multiduration(dataset, times, bp=None, test_splits=[0]):
+    fix_as_mat = False
+    fix_key = ""
+    uses_fix = True
     use_accum = False
     accum_suffix = "_accum" if use_accum else ""
 
-    if dataset == 'codecharts':
+    if dataset == 'salicon':
+        print('Using SALICON')
+        rep = len(times)
+
+        img_path_train = '../../predimportance_shared/datasets/salicon/train'
+        map_path_train = '../../predimportance_shared/datasets/salicon/train_maps'
+        img_path_val = '../../predimportance_shared/datasets/salicon/val'
+        map_path_val = '../../predimportance_shared/datasets/salicon/val_maps'
+
+        fix_path_train = '../../predimportance_shared/datasets/salicon/train_fix_png'
+        fix_path_val = '../../predimportance_shared/datasets/salicon/val_fix_png'
+
+        img_files_train = sorted([os.path.join(img_path_train, f) for f in os.listdir(img_path_train)])
+        map_files_train = [sorted([os.path.join(map_path_train, f) for f in os.listdir(map_path_train)])]*rep
+        fix_files_train = [sorted([os.path.join(fix_path_train, f) for f in os.listdir(fix_path_train) if f.endswith('.png')])]*rep
+        img_files_val = sorted([os.path.join(img_path_val, f) for f in os.listdir(img_path_val)])
+        map_files_val = [sorted([os.path.join(map_path_val, f) for f in os.listdir(map_path_val)])]*rep
+        fix_files_val = [sorted([os.path.join(fix_path_val, f) for f in os.listdir(fix_path_val) if f.endswith('.png')])]*rep
+        img_files_test = []
+        map_files_test = []
+        fix_files_test = []
+
+    elif dataset == 'codecharts':
+        if not bp:
+            bp = "/data/vision/oliva/scratch/code-chart-data/training_data/codecharts"
+        else:
+            bp = os.path.join(bp, 'codecharts-final')
+        use_accum = False
+        accum_suffix = "_accum" if use_accum else ""
+
         n_val=50
 
-        img_path = os.path.join(bp, dataset, "raw_img" + accum_suffix)
-        map_path = os.path.join(bp, dataset, "heatmaps" + accum_suffix)
-        fix_path = os.path.join(bp, dataset, "fix_maps" + accum_suffix)
+        img_path = os.path.join(bp, "raw_img" + accum_suffix)
+        map_path = os.path.join(bp, "heatmaps" + accum_suffix)
+        fix_path = os.path.join(bp, "fix_maps" + accum_suffix)
 
-        data = load_multiduration_data(img_path, map_path, fix_path, times=times)
+        img_files, map_files, fix_files = load_multiduration_data(img_path, map_path, fix_path, times=times)
+        #test_data = load_multiduration_data(img_path_val, map_path_val, fix_path_val, times=[500,3000,5000])
 
-        img_files, map_files, fix_files = data
-
-        # filter based on the split
-        with open(os.path.join(bp, dataset, "splits.json")) as infile:
+        # data divided in 4 splits of 250 images each. when test_splits=[0], we use sets [1,2,3] for training and [0] for test. 
+        with open("%s/splits.json" % bp) as infile:
             splits = json.load(infile)
             non_test_splits = [s for s in splits.keys() if int(s) not in test_splits]
-            # BY CONVENTION, split 1 is test
+
             train = [elt for i in non_test_splits for elt in splits[str(i)]]
             test = set([elt for i in test_splits for elt in splits[str(i)]])
             val = set(train[:n_val])
@@ -236,73 +377,69 @@ def load_datasets_multiduration(dataset, times, bp="", test_splits=[0], verbose=
         def img_in(imfile, imset):
             return _imname(imfile) in (_imname(elt) for elt in imset)
 
-        ret['img_files_train'] = [f for f in img_files if img_in(f, train)]
-        ret['img_files_val'] = [f for f in img_files if img_in(f, val)]
-        ret['img_files_test'] = [f for f in img_files if img_in(f, test)]
+        img_files_train = [f for f in img_files if img_in(f, train)]
+        img_files_val = [f for f in img_files if img_in(f, val)]
+        img_files_test = [f for f in img_files if img_in(f, test)]
 
-        ret['map_files_train'] = []
-        ret['map_files_val'] = []
-        ret['map_files_test'] = []
-        ret['fix_files_train'] = []
-        ret['fix_files_val'] = []
-        ret['fix_files_test'] = []
+        map_files_train = []
+        map_files_val = []
+        map_files_test = []
+        fix_files_train = []
+        fix_files_val = []
+        fix_files_test = []
 
         for t in range(len(map_files)):
             for f in map_files[t]:
                 bn = os.path.basename(f)
-            ret['map_files_train'].append([f for f in map_files[t] if img_in(f, train)])
-            ret['map_files_val'].append([f for f in map_files[t] if img_in(f, val)])
-            ret['map_files_test'].append([f for f in map_files[t] if img_in(f, test)])
+            map_files_train.append([f for f in map_files[t] if img_in(f, train)])
+            map_files_val.append([f for f in map_files[t] if img_in(f, val)])
+            map_files_test.append([f for f in map_files[t] if img_in(f, test)])
 
-            ret['fix_files_train'].append([f for f in fix_files[t] if img_in(f, train)])
-            ret['fix_files_val'].append([f for f in fix_files[t] if img_in(f, val)])
-            ret['fix_files_test'].append([f for f in fix_files[t] if img_in(f, test)])
+            fix_files_train.append([f for f in fix_files[t] if img_in(f, train)])
+            fix_files_val.append([f for f in fix_files[t] if img_in(f, val)])
+            fix_files_test.append([f for f in fix_files[t] if img_in(f, test)])
 
     elif dataset == "salicon_md" or dataset == "salicon_md_fixations":
+        bp_md = os.path.join(bp, 'salicon_md')
+        if not bp:
+            bp_salicon = "../../predimportance_shared/datasets/"
+        else:
+            bp_salicon = bp
         dsets = {}
         for mode in ["train", "val"]:
-            img_path = os.path.join(bp, dataset, mode, "raw_img" + accum_suffix)
-            map_path = os.path.join(bp, dataset, mode, "heatmaps" + accum_suffix)
-            fix_path = os.path.join(bp, dataset, mode, "fix_maps" + accum_suffix)
+            img_path = os.path.join(bp_md, mode, "raw_img" + accum_suffix)
+            map_path = os.path.join(bp_md, mode, "heatmaps" + accum_suffix)
+            fix_path = os.path.join(bp_md, mode, "fix_maps" + accum_suffix)
             data = load_multiduration_data(img_path, map_path, fix_path, times=times)
             dsets[mode] = data
 
-        ret['img_files_train'] = dsets["train"][0]
-        ret['map_files_train'] = dsets["train"][1]
-        ret['fix_files_train'] = dsets["train"][2]
+        img_files_train = dsets["train"][0]
+        map_files_train = dsets["train"][1]
+        fix_files_train = dsets["train"][2]
 
-        ret['img_files_val'] = dsets["val"][0]
-        ret['map_files_val'] = dsets["val"][1]
-        ret['fix_files_val'] = dsets["val"][2]
+        img_files_val = dsets["val"][0]
+        map_files_val = dsets["val"][1]
+        fix_files_val = dsets["val"][2]
 
         # load the test images (only have images)
-        img_path_test = os.path.join(bp, 'salicon', 'test')
-        ret['img_files_test'] = sorted([os.path.join(img_path_test, f) for f in os.listdir(img_path_test)])
+        img_path_test = os.path.join(bp_salicon, 'salicon', 'test')
+        img_files_test = sorted([os.path.join(img_path_test, f) for f in os.listdir(img_path_test)])
+        map_files_test = None
+        fix_files_test = None
 
-    else: 
-        if search_singledur:
-            print("WARNING: could not find multiduration dataset %s. Attempting to find a single-duration dataset." % dataset)
-            ret = load_datasets_singleduration(dataset, bp=bp, verbose=False, search_multidur=False)
-            
-            _repeat = lambda x, rep: None if x is None else [x]*rep
-            rep = len(times)
+    else:
+        raise ValueError("Unknown dataset. Possible values are codecharts, salicon or salicon_md")
 
-            if verbose: 
-                print("Found single-duration dataset %s; making %d copies for compatability with multi-duration models" % (dataset, rep))
-     
-            for key in DIFFERENT_FORMAT_KEYS:
-                if key in ret: 
-                    ret[key] = rep*[ret[key]]
-        else: 
-            raise RuntimeError("Could not find multiduration dataset %s" % dataset)
+    print("img_files_train: %d" % len(img_files_train))
+    print("img_files_val: %d" % len(img_files_val))
+    print("img_files_test: %d" % len(img_files_test))
 
-    if verbose: 
-        for key, val in ret.items(): 
-            if "img" in key: 
-                print("%s: %d" % (key, len(val)))
-            elif key in VALID_FILE_KEYS:
-                print(key, ":", [len(elt) for elt in val])
-            else: 
-                print(key, ":", val)
-    
-    return ret
+    print("map_files_train: ", [len(elt) for elt in map_files_train])
+    print("map_files_val: ", [len(elt) for elt in map_files_val])
+    print("map_files_test: ", [len(elt) for elt in map_files_test] if  map_files_test else map_files_test)
+
+    print("fix_files_train: ", [len(elt) for elt in fix_files_train])
+    print("fix_files_val: ", [len(elt) for elt in fix_files_val])
+    print("fix_files_test: ", [len(elt) for elt in fix_files_test] if fix_files_test else fix_files_test)
+
+    return img_files_train, map_files_train, fix_files_train, img_files_val, map_files_val, fix_files_val, img_files_test, map_files_test, fix_files_test, uses_fix, fix_as_mat, fix_key

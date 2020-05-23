@@ -15,20 +15,56 @@ from PIL import Image
 from IPython.display import clear_output
 import scipy.io
 from copy import deepcopy
+import re
 
 # DEBUG
 DEBUG = False
+# number of rows of input images
+cat2000_c = 1920
+cat2000_r = 1080
+#cat2000_r_out = 1088 # this is divisible by 16
+cat2000_r_out = 1104 # divible by 48
+cat2000_c_out = cat2000_c # already divisible by 16
 
-def repeat(nb_timestep):
-    def _inner(x): 
-        return K.repeat_elements(K.expand_dims(x,axis=1), nb_timestep, axis=1)
-    return _inner
+cc_c = 300
+cc_r = 225
+cc_c_out = 1776
+cc_r_out = 1344
+
+#shape_r = int(cat2000_r/6)
+shape_r = 240
+#shape_r = cc_r
+# number of cols of input images
+#shape_c = int(cat2000_c/6)
+shape_c = 320
+#shape_c = cc_c
+# number of rows of downsampled maps
+shape_r_gt = 30
+# number of cols of downsampled maps
+shape_c_gt = 40
+# number of rows of model outputs
+#shape_r_out = cat2000_r_out
+shape_r_out = 480
+#shape_r_out = cc_r_out
+# number of cols of model outputs
+#shape_c_out = cat2000_c_out
+shape_c_out = 640
+#shape_c_out = cc_c_out
+# final upsampling factor
+upsampling_factor = 16
+# number of epochs
+nb_epoch = 50
+# number of timesteps
+nb_timestep = 3
+# number of learned priors
+nb_gaussian = 16
+
+def repeat(x):
+    return K.repeat_elements(K.expand_dims(x,axis=1), nb_timestep, axis=1)
 #     return K.reshape(K.repeat(K.batch_flatten(x), nb_timestep), (1, nb_timestep, shape_r_gt, shape_c_gt, 512))
 
-def repeat_shape(nb_timestep):
-    def _inner(s): 
-        return (s[0], nb_timestep) + s[1:]
-    return _inner
+def repeat_shape(s):
+    return (s[0], nb_timestep) + s[1:]
 
 
 def padding(img, shape_r, shape_c, channels=3):
@@ -94,34 +130,76 @@ def padding_fixation(img, shape_r, shape_c):
 
     return img_padded
 
-def preprocess_fixmaps(paths, shape_r, shape_c, fix_as_mat=False, fix_key=""):
-    ims = np.zeros((len(paths), shape_r, shape_c, 1))
+def preprocess_fixmaps(paths, shape_r, shape_c, fix_as_mat=False, fix_key="", pad=True):
+
+    if pad:
+        ims = np.zeros((len(paths), shape_r, shape_c, 1))
+    else:
+        ims = []
 
 #     print('ims.shape:',ims.shape)
     for i, path in enumerate(paths):
-        if fix_as_mat:
+        if path == 'dummy':
+            fix_map = np.zeros((480,640))
+        elif fix_as_mat:
             mat = scipy.io.loadmat(path)
             if DEBUG:
                 print('mat',mat)
             fix_map = mat[fix_key]
-
         else:
             fix_map = cv2.imread(path, 0)
 
         if DEBUG:
             print('fix_map shape, np.max(fix_map),np.min(fix_map),np.mean(fix_map)',fix_map.shape,np.max(fix_map),np.min(fix_map),np.mean(fix_map))
-
-        ims[i, :, :, 0] = padding_fixation(fix_map, shape_r=shape_r, shape_c=shape_c)
-
+        if pad:
+            ims[i, :, :, 0] = padding_fixation(fix_map, shape_r=shape_r, shape_c=shape_c)
+        else:
+            ims.append(fix_map)
+#             ims = np.array(ims)
+        # print('ims[-1].shape',ims[-1].shape)
     return ims
 
-def preprocess_images(paths, shape_r, shape_c):
-    ims = np.zeros((len(paths), shape_r, shape_c, 3))
+
+
+def preprocess_maps(paths, shape_r, shape_c, pad=True):
+    if pad:
+        ims = np.zeros((len(paths), shape_r, shape_c, 1))
+    else:
+        ims = []
+    for i, path in enumerate(paths):
+        original_map = cv2.imread(path, 0)
+        if pad:
+            padded_map = padding(original_map, shape_r, shape_c, 1)
+            ims[i,:,:, 0] = padded_map.astype(np.float32)
+            ims[i,:,:, 0] /= 255.0
+        else:
+            ims.append(original_map.astype(np.float32)/255.0)
+#             ims = np.array(ims)
+            # print('ims.shape in preprocess_maps',ims.shape)
+        # print('prep_maps: ims[-1].shape',ims[-1].shape)
+    return ims
+
+def preprocess_images(paths, shape_r, shape_c, pad=True):
+    if pad:
+        ims = np.zeros((len(paths), shape_r, shape_c, 3))
+    else:
+        ims =[]
 
     for i, path in enumerate(paths):
         original_image = cv2.imread(path)
-        padded_image = padding(original_image, shape_r, shape_c, 3)
-        ims[i] = padded_image
+        if original_image is None:
+            raise ValueError('Path unreadable: %s' % path)
+        if pad:
+            padded_image = padding(original_image, shape_r, shape_c, 3)
+            ims[i] = padded_image
+        else:
+            original_image = original_image.astype(np.float32)
+            original_image[..., 0] -= 103.939
+            original_image[..., 1] -= 116.779
+            original_image[..., 2] -= 123.68
+            ims.append(original_image)
+#             ims = np.array(ims)
+            print('ims.shape in preprocess_imgs',ims.shape)
 
         # DEBUG
 #     plt.figure()
@@ -131,9 +209,10 @@ def preprocess_images(paths, shape_r, shape_c):
 #     plt.imshow(cv2.cvtColor(padded_image, cv2.COLOR_BGR2RGB))
 #     plt.suptitle(path)
 
-    ims[:, :, :, 0] -= 103.939
-    ims[:, :, :, 1] -= 116.779
-    ims[:, :, :, 2] -= 123.68
+    if pad:
+        ims[:, :, :, 0] -= 103.939
+        ims[:, :, :, 1] -= 116.779
+        ims[:, :, :, 2] -= 123.68
 
     return ims
 
@@ -153,16 +232,6 @@ def reverse_preprocess(img):
 
     return im
 
-def preprocess_maps(paths, shape_r, shape_c):
-    ims = np.zeros((len(paths), shape_r, shape_c, 1))
-
-    for i, path in enumerate(paths):
-        original_map = cv2.imread(path, 0)
-        padded_map = padding(original_map, shape_r, shape_c, 1)
-        ims[i,:,:, 0] = padded_map.astype(np.float32)
-        ims[i,:,:, 0] /= 255.0
-
-    return ims
 
 
 def postprocess_predictions(pred, shape_r, shape_c, blur=False, normalize=False):
@@ -170,13 +239,13 @@ def postprocess_predictions(pred, shape_r, shape_c, blur=False, normalize=False)
     rows_rate = shape_r / predictions_shape[0]
     cols_rate = shape_c / predictions_shape[1]
 
-    pred = pred / np.max(pred) * 255
+    # pred = pred / np.max(pred) * 255
 
 #    print('Preparing to resize...')
     if blur:
         sigma=blur
         pred = scipy.ndimage.filters.gaussian_filter(pred, sigma=sigma)
- 
+
     if rows_rate > cols_rate:
         new_cols = (predictions_shape[1] * shape_r) // predictions_shape[0]
         pred = cv2.resize(pred, (new_cols, shape_r))
@@ -197,7 +266,22 @@ def postprocess_predictions(pred, shape_r, shape_c, blur=False, normalize=False)
 
 
 class MultidurationGenerator(Sequence):
-    def __init__(self, img_size, map_size, img_filenames, map_filenames=None, fix_filenames=None, batch_size=1, shuffle=True, augment=False, n_output_maps=1, n_output_fixs=1, mode = 'multistream_concat', return_names=False, fix_as_mat=False, fix_key=""):
+    def __init__(self, 
+                 img_filenames, 
+                 map_filenames=None, 
+                 fix_filenames=None, 
+                 batch_size=1, 
+                 img_size=(shape_r,shape_c), 
+                 map_size=(shape_r_out, shape_c_out),
+                 shuffle=True, 
+                 augment=False, 
+                 n_output_maps=1, 
+                 n_output_fixs=1, 
+                 mode = 'multistream_concat', 
+                 fix_key='',
+                 return_names=False, 
+                 fix_as_mat=False, 
+                 pad_gt_maps=True):
         '''
         Generator for multi-duration saliency data. Receives lists of images, and t lists of heatmaps and fixations, where t
         is the number of saliency time steps to yield. The generator will automatically infer t from the length of map_filenames.
@@ -218,16 +302,21 @@ class MultidurationGenerator(Sequence):
 
         '''
 
-        print('Instantiating MultidurationGenerator. Number of files received: %d. Batch size: %d. Image size: %s. Augmentation: %d. Mode: %s' % (len(img_filenames), batch_size, str(img_size), augment,mode ))
+        print('Instantiating MultidurationGenerator. \
+        Number of files received: %d. Batch size: %d. \
+        Image size: %s. Augmentation: %d. Mode: %s' \
+        % (len(img_filenames), batch_size, str(img_size), augment,mode ))
 
         if (mode == 'multistream_concat') and (map_filenames is None or fix_filenames is None):
-            print('Multistream concat can only be used when both fixations and maps are provided. If only one is enough, use `multistream_full`.')
+            print('Multistream concat can only be used when both fixations and maps are provided. \
+            If only one is enough, use `multistream_full`.')
 
 
         self.n_output_maps = n_output_maps
         self.n_output_fixs = n_output_fixs
         self.fix_as_mat = fix_as_mat
         self.fix_key = fix_key
+        self.pad_gt_maps = pad_gt_maps
 
         self.img_filenames = np.array(img_filenames)
 
@@ -287,27 +376,32 @@ class MultidurationGenerator(Sequence):
         # Get ground truth maps for all times
         if self.n_output_maps>=1:
             maps = []
-            for i in range(self.timesteps):
-                maps_names_t = self.map_filenames[i][idx * self.batch_size : (idx + 1) * self.batch_size]
-                maps_t = preprocess_maps(maps_names_t, self.map_size[0], self.map_size[1])
+            for t in range(self.timesteps):
+                maps_names_t = self.map_filenames[t][idx * self.batch_size : (idx + 1) * self.batch_size]
+                maps_t = preprocess_maps(maps_names_t, self.map_size[0], self.map_size[1], pad=self.pad_gt_maps)
                 maps.append(maps_t)
 
         # Get fix maps for all times
         if self.n_output_fixs>=1:
             fixs = []
-            for i in range(self.timesteps):
-                fix_names_t = self.fix_filenames[i][idx * self.batch_size : (idx + 1) * self.batch_size]
-                fix_t = preprocess_fixmaps(fix_names_t, self.map_size[0], self.map_size[1], fix_as_mat=self.fix_as_mat, fix_key=self.fix_key)
+            for t in range(self.timesteps):
+                fix_names_t = self.fix_filenames[t][idx * self.batch_size : (idx + 1) * self.batch_size]
+                fix_t = preprocess_fixmaps(fix_names_t, 
+                                           self.map_size[0], 
+                                           self.map_size[1], 
+                                           fix_as_mat=self.fix_as_mat, 
+                                           fix_key=self.fix_key, 
+                                           pad=self.pad_gt_maps)
                 fixs.append(fix_t)
 
         if self.augment:
             seq_det = self.seq.to_deterministic()
             images = seq_det.augment_images(images)
-            for i in range(len(maps)):
+            for ta in range(len(maps)):
                 if self.n_output_maps>=1:
-                    maps[i] = seq_det.augment_heatmaps(maps[i])
+                    maps[ta] = seq_det.augment_heatmaps(maps[ta])
                 if self.n_output_fixs>=1:
-                    fixs[i] = seq_det.augment_heatmaps(fixs[i])
+                    fixs[ta] = seq_det.augment_heatmaps(fixs[ta])
 
         if self.mode == 'singlestream':
             # Returns a list of n_output_maps+n_output_fixs elements. Each element is a 5D tensor: (bs, timesteps, r, c, 1)
@@ -315,14 +409,29 @@ class MultidurationGenerator(Sequence):
             if self.n_output_maps>=1:
                 maps_with_time = np.zeros((len(batch_imgs),self.timesteps,self.map_size[0],self.map_size[1],1))
                 for i in range(self.timesteps):
-                    # print("maps size", maps[i].shape)
                     maps_with_time[:,i,...] = maps[i]
+
+                # new version of block above that handles images of varying size
+#                 maps_with_time = []
+#                 for bidx in range(self.batch_size):
+#                     # maps_with_time is list of len batch_size with 3D tensors of shape t,w,h
+#                     maps_with_time.append( [maps[ti][bidx] for ti in range(self.timesteps)] )
+                
+                
                 outs.extend([maps_with_time]*self.n_output_maps)
+
 
             if self.n_output_fixs>=1:
                 fixs_with_time = np.zeros((len(batch_imgs),self.timesteps,self.map_size[0],self.map_size[1],1))
                 for i in range(self.timesteps):
                     fixs_with_time[:,i,...] = fixs[i]
+
+                # new version of block above that handles images of varying size
+#                 fixs_with_time = []
+#                 for bidx in range(self.batch_size):
+#                     # fixs_with_time is list of len batch_size with 3D tensors of shape t,w,h
+#                     fixs_with_time.append( np.array([fixs[ti][bidx] for ti in range(self.timesteps)]) )                    
+                    
                 outs.extend([fixs_with_time]*self.n_output_fixs)
 
         elif self.mode == 'multistream_concat':
@@ -341,7 +450,7 @@ class MultidurationGenerator(Sequence):
             if self.n_output_fixs >= 1:
                 for i in range(self.timesteps):
                     outs.extend([fixs[i]]*self.n_output_fixs)
-        
+
         if self.return_names:
             return images, outs, batch_imgs
         return images, outs
@@ -361,35 +470,39 @@ class SalImpGenerator(Sequence):
 
     def __init__(
         self,
-        img_size,
-        map_size,
         img_filenames,
-        map_filenames,
+        imp_filenames,
         fix_filenames=None,
         batch_size=1,
+        img_size=(shape_r,shape_c),
+        map_size=(shape_r_out, shape_c_out),
         shuffle=True,
         augment=False,
         n_output_maps=1,
-        n_output_fixs=1,
-        concat_fix_and_maps=False,
+        concat_fix_and_maps=True,
         fix_as_mat=False,
-        fix_key=""):
+        fix_key="",
+        pad_maps=True,
+        pad_imgs=True,
+        return_names=False):
 
-        print('Instantiating SalImpGenerator. Number of files received: %d. Batch size: %d. Image size: %s. Map size: %s. Augmentation: %d' %
-              (len(img_filenames), batch_size, str(img_size), str(map_size), augment ))
+        print('Instantiating SalImpGenerator. Number of files received: %d. Batch size: %d. Image size: %s. Map size: %s. Augmentation: %d, Pad_imgs: %s. Pad_maps: %s.' %
+              (len(img_filenames), batch_size, str(img_size), str(map_size), augment, pad_imgs, pad_maps ))
 
         self.img_filenames = np.array(img_filenames)
-        self.map_filenames = np.array(map_filenames)
+        self.imp_filenames = np.array(imp_filenames)
         self.batch_size = batch_size
         self.img_size = img_size
         self.map_size = map_size
         self.shuffle = shuffle
         self.augment = augment
         self.n_output_maps = n_output_maps
-        self.n_output_fixs = n_output_fixs
         self.concat_fix_and_maps = concat_fix_and_maps
         self.fix_as_mat=fix_as_mat
         self.fix_key = fix_key
+        self.pad_imgs = pad_imgs
+        self.pad_maps = pad_maps
+        self.return_names=return_names
 
         if fix_filenames is not None:
             self.fix_filenames = np.array(fix_filenames)
@@ -414,13 +527,13 @@ class SalImpGenerator(Sequence):
 
     def __getitem__(self, idx):
         batch_x = self.img_filenames[idx * self.batch_size : (idx + 1) * self.batch_size]
-        batch_y = self.map_filenames[idx * self.batch_size : (idx + 1) * self.batch_size]
+        batch_y = self.imp_filenames[idx * self.batch_size : (idx + 1) * self.batch_size]
 
 #         print('img names in this batch:', batch_x)
-#         print('map names in this batch:', batch_y)
+#         print('imp names in this batch:', batch_y)
 
-        images = preprocess_images(batch_x, self.img_size[0], self.img_size[1])
-        maps = preprocess_maps(batch_y, self.map_size[0], self.map_size[1])
+        images = preprocess_images(batch_x, self.img_size[0], self.img_size[1], pad =self.pad_imgs)
+        maps = preprocess_maps(batch_y, self.map_size[0], self.map_size[1], pad =self.pad_maps)
 
         if self.fix_filenames is not None:
             fixs = preprocess_fixmaps(
@@ -442,14 +555,21 @@ class SalImpGenerator(Sequence):
             if self.n_output_maps >1:
                 outs = [outs]*self.n_output_maps
         else:
-            outs = [maps]*self.n_output_maps
-            fixs = [fixs]*self.n_output_fixs
-            outs.extend(fixs)
+            if self.n_output_maps ==1:
+                if self.fix_filenames is not None:
+                    outs=[maps,fixs]
+                else:
+                    outs=maps
+            else:
+                outs = [maps]*self.n_output_maps
+                if self.fix_filenames is not None:
+                    outs.append(fixs)
 
 #         print('generator: len(outs) should be 3:', len(outs))
 #         print('generator: outs[0].shape (should be bs,2,r,c,1):', outs[0].shape)
 #         print('generator: outs[0][0][0].shape (should be first map of batch)',outs[0][0][0].shape)
-
+        if self.return_names:
+            return images, outs, batch_x
         return images, outs
 
 
@@ -458,7 +578,7 @@ class SalImpGenerator(Sequence):
             idxs = list(range(len(self.img_filenames)))
             np.random.shuffle(idxs)
             self.img_filenames = self.img_filenames[idxs]
-            self.map_filenames = self.map_filenames[idxs]
+            self.imp_filenames = self.imp_filenames[idxs]
             if self.fix_filenames is not None:
                 self.fix_filenames = self.fix_filenames[idxs]
 
@@ -470,8 +590,7 @@ def eval_generator(
     inp_size,
     fix_as_mat=False,
     fix_key="",
-    fixcoord_filetype='mat',
-    return_name=False):
+    fixcoord_filetype='mat'):
     """
         Returns tuples img, heatmap, fixmap, fix_coords to be used for data eval
 
@@ -485,7 +604,6 @@ def eval_generator(
     n_times = len(map_filenames)
     n_img = len(map_filenames[0])
     for i in range(n_img):
-        name = img_filenames[i]
         imgs = []
         maps = []
         fixmaps = []
@@ -495,6 +613,7 @@ def eval_generator(
             # load the image
             #img = cv2.imread(img_filenames[i])
             map_ = cv2.imread(map_filenames[t][i], cv2.IMREAD_GRAYSCALE)
+#             print("map max min", map_.max(), map_.min())
             mapshape = map_.shape
             if fix_as_mat:
                 fixmap = preprocess_fixmaps(
@@ -525,7 +644,199 @@ def eval_generator(
             maps.append(map_)
             fixmaps.append(fixmap)
             fixcoords.append(all_fixations)
-        ret = [imgs, maps, fixmaps, fixcoords]
-        if return_name: 
-            ret.append(name)
-        yield ret
+        yield (imgs, maps, fixmaps, fixcoords, img_filenames[i])
+
+
+
+
+
+
+def get_str2label(dataset_path, label_mapping_file=None):
+    str2label={}
+    if label_mapping_file:
+        with open(label_mapping_file, "r") as f:
+            lines = [l.strip() for l in f.readlines()]
+            for l in lines:
+                cl = l.split()[0]
+                i = l.split()[-1]
+                str2label[cl] = int(i)
+    else:
+        for i,cl in enumerate([d for d in os.listdir(dataset_path) if os.path.isdir(os.path.join(dataset_path, d))]):
+            str2label[cl] = i
+    return str2label
+
+def get_labels(filenames, str2label=None):
+
+    if not str2label:
+        str2label = get_str2label(dataset_path = '../../predimportance_shared/datasets/imp600/imgs')
+
+    onehot_arr = np.zeros((len(filenames), len(str2label)))
+#     print('filenames in get labels',filenames)
+
+    for i,f in enumerate(filenames):
+        split = re.split('/|\\\\',f)
+        class_name = split[-2]
+        if split[-3] == 'salicon':
+            label = str2label['natural_images']
+            onehot_arr[i, label] = 1
+        else:
+    #         print('CLASS NAME IN GET_LABELS', class_name)
+            label = str2label[class_name]
+            onehot_arr[i, label] = 1
+    return onehot_arr
+
+
+class ImpAndClassifGenerator(Sequence):
+
+    def __init__(
+        self,
+        img_filenames,
+        imp_filenames,
+        fix_filenames=None,
+        extra_imgs=None, # For feeding a much larger dataset, e.g. salicon, that the generator will subsample to maintain class balance
+        extra_imps=None,
+        extra_fixs=None,
+        extras_per_epoch=160,
+        batch_size=1,
+        img_size=(shape_r,shape_c),
+        map_size=(shape_r_out, shape_c_out),
+        shuffle=True,
+        augment=False,
+        n_output_maps=1,
+        concat_fix_and_maps=True,
+        fix_as_mat=False,
+        fix_key="",
+        str2label=None,
+        dummy_labels=False,
+        num_classes=6,
+        pad_imgs=True,
+        pad_maps=True,
+        return_names=False,
+        return_labels=True):
+
+        print('Instantiating ImpAndClassifGenerator. Number of files received: %d. Extras: %s. Batch size: %d. Image size: %s. Map size: %s. Augmentation: %d, Pad_imgs: %s. Pad_maps: %s. Num classes: %d.' %
+              (len(img_filenames), len(extra_imgs) if extra_imgs is not None else None, batch_size, str(img_size), str(map_size), augment, pad_imgs, pad_maps, num_classes ))
+
+        self.img_filenames = np.array(img_filenames)
+        self.imp_filenames = np.array(imp_filenames)
+        self.batch_size = batch_size
+        self.img_size = img_size
+        self.map_size = map_size
+        self.shuffle = shuffle
+        self.augment = augment
+        self.n_output_maps = n_output_maps
+        self.concat_fix_and_maps = concat_fix_and_maps
+        self.fix_as_mat = fix_as_mat
+        self.fix_key = fix_key
+        self.str2label = str2label
+        self.num_classes = num_classes
+        self.dummy_labels = dummy_labels
+        self.pad_imgs = pad_imgs
+        self.pad_maps = pad_maps
+        self.extra_idx = 0
+        self.extra_imgs = np.array(extra_imgs) if extra_imgs is not None else None
+        self.extra_imps = np.array(extra_imps) if extra_imps is not None else None
+        self.extra_fixs = np.array(extra_fixs) if extra_fixs is not None else None
+        self.extras_per_epoch = extras_per_epoch
+        self.return_names = return_names
+        self.return_labels=return_labels
+
+        if fix_filenames is not None:
+            self.fix_filenames = np.array(fix_filenames)
+        else:
+            self.fix_filenames = None
+
+        if augment:
+            sometimes = lambda aug: iaa.Sometimes(0.4, aug)
+            self.seq = iaa.Sequential([
+                    sometimes(iaa.CropAndPad(px=(0, 20))), # crop images from each side by 0 to 16px (randomly chosen)
+                    iaa.Fliplr(0.5), # horizontally flip 50% of the images
+                    sometimes(iaa.CoarseDropout(p=0.1, size_percent=0.05)),
+                    sometimes(iaa.Affine(rotate=(-15, 15)))
+                ], random_order=True)
+
+
+        self.on_epoch_end()
+
+    def __len__(self):
+        return int(np.ceil(len(self.imgs_this_epoch) / float(self.batch_size)))
+
+    def __getitem__(self, idx):
+        batch_x = self.imgs_this_epoch[idx * self.batch_size : (idx + 1) * self.batch_size]
+        batch_y = self.imps_this_epoch[idx * self.batch_size : (idx + 1) * self.batch_size]
+
+#         print('img names in this batch:', batch_x)
+#         print('imp names in this batch:', batch_y)
+
+        images = preprocess_images(batch_x, self.img_size[0], self.img_size[1], pad= self.pad_imgs)
+        maps = preprocess_maps(batch_y, self.map_size[0], self.map_size[1], pad=self.pad_maps)
+
+        if not self.dummy_labels:
+            labels = get_labels(batch_x, self.str2label) # Returns a numpy array of shape (bs, num_classes)
+        else:
+            labels = np.zeros((len(images),self.num_classes))
+        if self.fix_filenames is not None:
+            fixs = preprocess_fixmaps(
+                self.fixs_this_epoch[idx * self.batch_size : (idx + 1) * self.batch_size],
+                self.map_size[0],
+                self.map_size[1],
+                fix_as_mat=self.fix_as_mat,
+                fix_key=self.fix_key)
+
+        if self.augment:
+            seq_det = self.seq.to_deterministic()
+            images = seq_det.augment_images(images)
+            maps = seq_det.augment_heatmaps(maps)
+            if self.fixs_this_epoch is not None:
+                fixs = seq_det.augment_heatmaps(fixs)
+
+        if self.fix_filenames is not None and self.concat_fix_and_maps:
+#             outs = np.concatenate([np.expand_dims(maps,axis=1),np.expand_dims(fixs,axis=1)], axis=1)
+            if self.n_output_maps >1:
+                outs = [outs]*self.n_output_maps
+            if self.return_labels: outs.append(labels)
+        else:
+            if self.n_output_maps ==1:
+                if self.fix_filenames is not None:
+                    outs=[maps,fixs]
+                    if self.return_labels: outs.append(labels)
+                else:
+                    outs=[maps]
+                    if self.return_labels: outs.append(labels)
+            else:
+                outs = [maps]*self.n_output_maps
+                if self.fix_filenames is not None:
+                    outs.append(fixs)
+                if self.return_labels: outs.append(labels)
+        if self.return_names:
+           outs.append(batch_x)
+        
+        return images, outs
+
+
+    def on_epoch_end(self):
+
+        if self.extra_imgs is not None:
+            # Sample a new set of extra images
+            extra_imgs_this_epoch = self.extra_imgs[self.extra_idx * self.extras_per_epoch : (self.extra_idx+1) * self.extras_per_epoch]
+            extra_imps_this_epoch = self.extra_imps[self.extra_idx * self.extras_per_epoch : (self.extra_idx+1) * self.extras_per_epoch]
+            extra_fixs_this_epoch = self.extra_fixs[self.extra_idx * self.extras_per_epoch : (self.extra_idx+1) * self.extras_per_epoch]
+            self.extra_idx +=1
+
+        else:
+            extra_imgs_this_epoch = []
+            extra_imps_this_epoch = []
+            extra_fixs_this_epoch = []
+
+        self.imgs_this_epoch = np.concatenate([self.img_filenames, extra_imgs_this_epoch])
+        self.imps_this_epoch = np.concatenate([self.imp_filenames,  extra_imps_this_epoch])
+        if self.fix_filenames is not None:
+            self.fixs_this_epoch = np.concatenate([self.fix_filenames, extra_fixs_this_epoch])
+
+        idxs = np.array(range(len(self.imgs_this_epoch)))
+        if self.shuffle:
+            np.random.shuffle(idxs)
+            self.imgs_this_epoch = self.imgs_this_epoch[idxs]
+            self.imps_this_epoch = self.imps_this_epoch[idxs]
+            if self.fix_filenames is not None:
+                self.fixs_this_epoch = self.fixs_this_epoch[idxs]

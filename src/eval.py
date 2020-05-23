@@ -5,7 +5,7 @@ import scipy.ndimage
 import matplotlib.pyplot as plt
 import scipy.stats
 from keras.utils import Sequence
-from sal_imp_utilities import *
+from eval_saliconeval import *
 
 CODECHARTS_SUB_DATASETS = ["OOC", "SALICON", "STANFORD-ACTIONS", "CAT2000", "CROWD", "LAMEM"]
 def name_to_dataset(name):
@@ -131,6 +131,7 @@ def acc_per_class(gt, pred):
     ret[np.argmax(gt)] = np.argmax(gt) == np.argmax(pred)
     return ret
 
+
 def predict_and_save(model, test_img, inp_size, savedir, mode='multistream_concat', blur=False, test_img_base_path="", ext="png"):
     # if test_img_base_path is specified, then preserves the original
     # nested structure of the directory from which the stuff is pulled
@@ -162,6 +163,7 @@ def predict_and_save(model, test_img, inp_size, savedir, mode='multistream_conca
         p_norm = (p-np.min(p))/(np.max(p)-np.min(p))
         p_img = p_norm*255
         hm_img = Image.fromarray(np.uint8(p_img), "L")
+        print("heatmap shape", p_img.shape)
 
         imname = os.path.splitext(os.path.basename(imfile))[0] + "." + ext
         if test_img_base_path:
@@ -194,7 +196,7 @@ def predict_and_save_md(model, test_img, inp_size, savedir, mode='multistream_co
         gt_shape = Image.open(imfile).size[::-1]
         img = preprocess_images([imfile], inp_size[0], inp_size[1])
         preds = model.predict(img)
-        for time, timelen in enumerate(times): 
+        for time, timelen in enumerate(times):
             if mode == 'multistream_concat':
                 p = preds[time][batch][map_idx][:, :, 0]
             elif mode == 'simple':
@@ -214,8 +216,8 @@ def predict_and_save_md(model, test_img, inp_size, savedir, mode='multistream_co
 
 
 
-def calculate_metrics(p, gt_map=None, gt_fix_map=None, gt_fix_points=None):
-    '''Calculates meaningful metrics for saliency given a single predicted map, its corresponding
+def calculate_metrics(p, gt_map=None, gt_fix_map=None, gt_fix_points=None, gt_labels=None, p_labels=None):
+    '''Calculates metrics for saliency given a SINGLE predicted map, its corresponding
     ground truth map (2D real valued np array), ground truth fixation map (2D binary np array),
     and ground truth fixation points (list of [x,y] coordinates corresponding to the fixation positions, 1 indexed)
 
@@ -225,6 +227,8 @@ def calculate_metrics(p, gt_map=None, gt_fix_map=None, gt_fix_points=None):
     gt_map: real valued 2D np array. Ground truth saliency map.
     gt_fix_map: binary 2D np array. Ground truth fixation map.
     gt_fix_points: list of [x,y] coords. 1 indexed.
+    p_labels: 1D array, predicted one-hot label vector (softmax output)
+    gt_labels: 1D array, true one-hot label vector
 
     Returns
     -------
@@ -252,6 +256,7 @@ def calculate_metrics(p, gt_map=None, gt_fix_map=None, gt_fix_points=None):
     if gt_labels is not None and p_labels is not None:
         metrics['Acc'] = [acc(gt_labels, p_labels)]
         metrics['Acc_per_class'] = [acc_per_class(gt_labels, p_labels)]
+
 
     return metrics
 
