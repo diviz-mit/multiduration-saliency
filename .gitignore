@@ -1,1 +1,27 @@
+# custom 
+mdsem_preds_visualized/
+mdsem_preds/
+mdsem_preds.zip
+anelise/
+codecharts_data
+applications/cropping_tmp/
+applications/mask_rcnn_coco.h5
+applications/render_results/
+applications/infos_td-best.pkl
+applications/model-best.pth
 ckpt/
+
+# swp files 
+*.sw[oap]
+
+# python
+__pycache__/
+*.py[cod]
+.mypy_cache/
+
+# environments
+.env
+.vent
+
+# jupyter
+.ipynb_checkpoints
