@@ -10,7 +10,7 @@ To get started, download the [CodeCharts1k multi-duration saliency dataset](http
 
 ## Performing multi-duration inference
 
-#### Inference notebook
+### Inference notebook
 To perform inference on a few images, we provide the `mdsem_simple_inference.ipynb` notebook, where our pretrained checkpoints on codecharts and salicon can be loaded and saliency maps can be generated from a few test images. 
 
 To run this notebook: 
@@ -19,7 +19,7 @@ To run this notebook:
 3. Download the checkpoints from our website ([codecharts_checkpoint](http://multiduration-saliency.csail.mit.edu/data/mdsem_codecharts0_cameraready_weights.hdf5), [salicon-md checkpoint](http://multiduration-saliency.csail.mit.edu/data/mdsem_salicon_cameraready_weights.hdf5) and place them in a folder named `ckpt/`. 
 4. Run the notebook.
 
-#### Important source files
+### Important source files
 
 - `src/multiduration_models.py`: model definitions for multi-duration models.
 - `src/singleduration_models.py`: model definitions for single-duration models.
@@ -27,6 +27,10 @@ To run this notebook:
 - `src/data_loading.py`: helper functions to load saliency data sets
 - `src/eval.py`: helper functions for evaluating models on common saliency metrics and saving predictions
 - `src/util.py`: utilities for loading models and losses
+
+### Plotting predictions
+
+Use the notebook `notebooks/plot_mdsem_predictions.ipynb` to plot predictions from MD-SEM.
 
 ## Multi-duration applications 
 
